@@ -21,15 +21,19 @@ public class P_Gems : MonoBehaviour {
 	}
 
 	public void ModGems(int value){
-		// Candidate value
-		int newCount = m_gemCount + value;
 
-		// Perform the mod, purchase or add
-		if (newCount >= 0) {
-			//Gem colour & anim
-			m_gemCounter.text = "x" + m_gemCount.ToString ();
+        // Candidate value
+        int newCount = m_gemCount + value;
 
-			m_gemCount = newCount;
+        // Perform the mod, purchase or add
+
+        if (newCount >= 0) {
+            // Update gem count
+            m_gemCount = newCount;
+
+            //Gem colour & anim
+            m_gemCounter.text = "x" + m_gemCount.ToString ();
+
 		}// else {
 			// Couldn't afford purchase
 
