@@ -7,14 +7,13 @@ public class P_CameraCollide : MonoBehaviour {
     public GameObject m_cameraRoot;
 
     private float m_maxZoom = 3f;
-    private float m_maxZoome;
 
     private float m_zoomVal;
 
 	// Use this for initialization
 	void Start () {
         m_zoomVal = (transform.position - m_cameraRoot.transform.position).magnitude;
-        m_maxZoome = m_zoomVal;
+        m_maxZoom = m_zoomVal;
     }
 	
 	// Update is called once per frame

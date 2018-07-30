@@ -33,7 +33,11 @@ public class DamageCollider : MonoBehaviour {
 	private GameObject m_colliderContainer;
 	private MeshCollider m_collider;
 
-	private bool m_firstTick = false;
+    // First tick of damage enabled, (for every swing)
+    private bool m_firstTick = false;
+    
+    // End the swing on the next frame (avoids last frame of dynamic collider being lost to late update).
+    private bool m_flaggedForEndSwing = false;
 
 	void OnTriggerEnter(Collider other){
 		if (other.tag == "SwingInterrupt") {
@@ -82,35 +86,59 @@ public class DamageCollider : MonoBehaviour {
 			B.transform.position - (A.transform.up * (m_height / 2)) - (A.transform.right * (m_width / 2)), 
 		};
 	}
-		
-	// This will only run when the object is enabled (during a swing)
-	void LateUpdate(){
+
+    IEnumerator EndSwingNextFrame() {
+        // Wait for the end of the frame
+        yield return new WaitForEndOfFrame();
+        m_flaggedForEndSwing = true;
+    }
+
+    // This will only run when the object is enabled (during a swing)
+    void LateUpdate(){
 		if (m_useDynamicMeshCollider) {
-			if (A != null && B != null) {
-				// Get the current box points from the box parameters and the node positions/orientation of A
-				m_curVerts = GetBoxPoints ();
+            if (A != null && B != null) {
 
-				// Wait for last points to catch up
-				if (!m_firstTick) {
-					m_firstTick = true;
-					m_lastVerts = m_curVerts;
-				}
+                if (m_flaggedForEndSwing)
+                {
+                    ClearAttackList();
 
-				// Make a vert array
-				Vector3[] allVerts = new Vector3[16];
-				for (int i = 0; i < 8; ++i) {
-					allVerts [i] = m_curVerts [i];
-					allVerts [i + 8] = m_lastVerts [i];
-				}
+                    if (m_useDynamicMeshCollider)
+                    {
+                        m_colliderContainer.SetActive(false);
+                    }
 
-				// Update the mesh (heavy)
-				Mesh newMesh = new Mesh ();
-				newMesh.vertices = allVerts;
-				newMesh.triangles = new int[]{ 0, 1, 8 };
+                    // m_swingColliderObject.SetActive (false); from C_Attack, essentially
+                    gameObject.SetActive(false);
+                }
+                else
+                {
+                    // Get the current box points from the box parameters and the node positions/orientation of A
+                    m_curVerts = GetBoxPoints();
 
-				m_collider.sharedMesh = newMesh;
+                    // Wait for last points to catch up
+                    if (!m_firstTick)
+                    {
+                        m_firstTick = true;
+                        m_lastVerts = m_curVerts;
+                    }
 
-				m_lastVerts = m_curVerts;
+                    // Make a vert array
+                    Vector3[] allVerts = new Vector3[16];
+                    for (int i = 0; i < 8; ++i)
+                    {
+                        allVerts[i] = m_curVerts[i];
+                        allVerts[i + 8] = m_lastVerts[i];
+                    }
+
+                    // Update the mesh (heavy)
+                    Mesh newMesh = new Mesh();
+                    newMesh.vertices = allVerts;
+                    newMesh.triangles = new int[] { 0, 1, 8 };
+
+                    m_collider.sharedMesh = newMesh;
+
+                    m_lastVerts = m_curVerts;
+                }
 			}
 		}
 	}
@@ -174,7 +202,8 @@ public class DamageCollider : MonoBehaviour {
 	void ClearAttackList(){
 		m_enemiesDamaged.Clear ();
 		m_firstTick = false;
-	}
+        m_flaggedForEndSwing = false;
+    }
 
 	// Cleans up the container when unequipping
 	public void UnEquip(){
@@ -185,19 +214,16 @@ public class DamageCollider : MonoBehaviour {
 
 	// Begin a swing state
 	public void BeginSwing(){
-		if (m_useDynamicMeshCollider) {
+        if (m_useDynamicMeshCollider) {
 			m_colliderContainer.SetActive (true);
 			m_colliderContainer.GetComponent<DynamicDamageMesh> ().InitDynaMesh (m_attackScript, this, m_damageTicksToDeal);
 		}
 	}
 
-	// End a swing state (includes interrupts)
+	// End a swing state (includes interrupts), FLAG FOR END SWING
 	public void EndSwing(){
-		if (m_useDynamicMeshCollider) {
-			//m_colliderContainer.SetActive (false);
-		}
-
-		//ClearAttackList ();
+        // Wait for the end of this frame, then flag for end swing
+        StartCoroutine(EndSwingNextFrame());
 	}
 
 	public bool PlayerOwnership{

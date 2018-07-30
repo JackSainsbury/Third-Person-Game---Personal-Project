@@ -98,7 +98,6 @@ public class C_Attack : MonoBehaviour {
 	protected IEnumerator InterruptSword (EQ_Weapon equipedWeapon) {
 		// Disable the collider, as we have interrupted the swing
 		m_swingColliderObject.GetComponent<DamageCollider> ().EndSwing ();
-		m_swingColliderObject.SetActive (false);
 
 		// Set the param to interrupted state, and the animation length
 		m_swordAnimator.SetInteger (animStateParameter, 4);
@@ -135,8 +134,8 @@ public class C_Attack : MonoBehaviour {
 		// Swing has finished, but is within the recovery time, do recovery animations and fx etc
 		// Clean up collider
 		if (m_swingColliderObject != null) {
+            // End swing will also SetActive m_swingColliderObject(false) internally
 			m_swingColliderObject.GetComponent<DamageCollider> ().EndSwing ();
-			m_swingColliderObject.SetActive (false);
 		}
 			
 		m_swordAnimator.SetInteger (animStateParameter, 2);
