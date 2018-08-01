@@ -18,6 +18,7 @@ public class P_CameraCollide : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+        /*
         RaycastHit hit;
 
         Vector3 dir = transform.position - m_cameraRoot.transform.position;
@@ -32,5 +33,6 @@ public class P_CameraCollide : MonoBehaviour {
             m_zoomVal = (m_cameraRoot.transform.position - hit.point).magnitude;
             transform.position = dir * m_zoomVal;
         }
+        */
 	}
 }

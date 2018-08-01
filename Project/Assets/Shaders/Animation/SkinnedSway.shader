@@ -13,17 +13,21 @@ Shader "Custom/SkinnedSway" {
 		_SpacialFrequency ("Spacial Frequency", float) = 0.0
 		_WaveLength ("Wave Length", float) = 0.0
 		_WaveSize ("Wave Size", float) = 0.0
+		_Cutoff("Alpha cutoff", Range(0,1)) = 0.5
 	}
 	SubShader {
-		Tags { "RenderType"="Opaque" "DisableBatching" = "True"}
+		Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "TransparentCutout" "DisableBatching" = "True"}
+		Blend SrcAlpha OneMinusSrcAlpha
 		LOD 200
 		
 		CGPROGRAM 
 
-		#pragma surface surf CelShadingForward fullforwardshadows vertex:vert
+		#pragma surface surf CelShadingForward fullforwardshadows vertex:vert alpha:fade
 
 		// Use shader model 3.0 target, to get nicer looking lighting
 		#pragma target 3.0
+
+		
 
 		half4 LightingCelShadingForward(SurfaceOutput s, half3 lightDir, half atten) {
 			half NdotL = dot(s.Normal, lightDir);
@@ -47,6 +51,8 @@ Shader "Custom/SkinnedSway" {
 		float _SpacialFrequency;
 		float _WaveLength;
 		float _WaveSize;
+		float _Cutoff;
+		float _ZWrite = 1;
 
 		// Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
 		// See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -67,7 +73,11 @@ Shader "Custom/SkinnedSway" {
 			// Albedo comes from a texture tinted by color
 			fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
 			o.Albedo = c.rgb;
-			o.Alpha = c.a;
+			float ca = c.a * _Color.a;
+
+			if (ca < _Cutoff) discard;
+
+			o.Alpha = 1;
 		}
 		ENDCG
 	}
