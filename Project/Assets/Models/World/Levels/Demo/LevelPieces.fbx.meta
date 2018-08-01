@@ -9,28 +9,33 @@ ModelImporter:
     100006: //RootNode
     100008: Plane
     100010: Plane.001
+    100012: Plane.002
     400000: Cube.001
     400002: Cube.002
     400004: Cube.003
     400006: //RootNode
     400008: Plane
     400010: Plane.001
+    400012: Plane.002
     2100000: No Name
     2300000: Cube.001
     2300002: Cube.002
     2300004: Cube.003
     2300006: Plane
     2300008: Plane.001
+    2300010: Plane.002
     3300000: Cube.001
     3300002: Cube.002
     3300004: Cube.003
     3300006: Plane
     3300008: Plane.001
+    3300010: Plane.002
     4300000: Cube.002
     4300002: Plane.001
     4300004: Plane
     4300006: Cube.003
     4300008: Cube.001
+    4300010: Plane.002
   externalObjects: {}
   materials:
     importMaterials: 1
