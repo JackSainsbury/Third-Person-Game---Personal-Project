@@ -15,7 +15,7 @@ public class SkinMove : MonoBehaviour {
 		m_skinnedMovers = new List<GameObject> ();
 
 		m_layerMask = LayerMask.GetMask("GroundCol");
-	}
+    }
 
 	// Update is called once per frame
 	void Update () {
@@ -30,7 +30,7 @@ public class SkinMove : MonoBehaviour {
 					m_skinnedMovers.Remove (m_skinnedMovers [i]);
 				}
 			}
-				
+			
 			Quaternion targetRot = Quaternion.FromToRotation (m_skinTarget.transform.up, new Vector3 (skinVector.x, m_skinTarget.transform.up.y, skinVector.z));
 
 			m_skinTarget.transform.rotation = Quaternion.Lerp (m_skinTarget.transform.rotation, targetRot, Time.deltaTime * 0.1f * Quaternion.Angle (m_skinTarget.transform.rotation, targetRot));

@@ -40,7 +40,7 @@ public class DamageCollider : MonoBehaviour {
     private bool m_flaggedForEndSwing = false;
 
 	void OnTriggerEnter(Collider other){
-		if (other.tag == "SwingInterrupt") {
+        if (other.tag == "SwingInterrupt") {
 			// I hit a wall
 			m_attackScript.InterruptAttack();
 		}else if (other.tag == "Destructable") {

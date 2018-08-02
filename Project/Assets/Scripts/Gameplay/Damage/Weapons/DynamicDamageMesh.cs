@@ -17,7 +17,7 @@ public class DynamicDamageMesh : MonoBehaviour {
 	}
 
 	void OnTriggerEnter(Collider other){
-		if (other.tag == "SwingInterrupt") {
+        if (other.tag == "SwingInterrupt") {
 			// I hit a wall
 			m_attackScript.InterruptAttack();
 		}else if (other.tag == "Destructable") {
@@ -34,7 +34,7 @@ public class DynamicDamageMesh : MonoBehaviour {
 				// Owner is player
 
 				if (other.tag == "Enemy") {
-					if (m_damagerColliderScript.CheckTarget (other)) {
+                    if (m_damagerColliderScript.CheckTarget (other)) {
 						other.GetComponent<C_Health> ().ModHealth (-m_damageTicksToDeal);
 					}
 				}
