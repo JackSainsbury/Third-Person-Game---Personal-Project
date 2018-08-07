@@ -8,17 +8,21 @@ public class P_Inventory : MonoBehaviour
 {
     public GameObject m_inventoryBackground;
 
-    // For state 1, load this left hand panel
-    public GameObject m_containerPanel;
-    // For state 0, load this left hand panel
-    public GameObject m_equipmentPanel;
-
     // Main Panel on the canvas to hold inventory components
     public GameObject m_inventoryPanel;
     // Main Panel on the canvas to hold inventory components
-    public GameObject m_slotContainer;
+    public GameObject m_inventorySlotSubPanel;
     // GameObject instantiated to display inventory items in
     public GameObject m_slotObject;
+
+    // For state 1, load this left hand panel
+    public GameObject m_containerPanel;
+    // Main Panel on the canvas to hold inventory components
+    public GameObject m_containerSlotSubPanel;
+    // For state 0, load this left hand panel
+    public GameObject m_equipmentPanel;
+
+
 
     // Array to hold what items are currently held
     private Slot[] m_slotArray;
@@ -33,7 +37,9 @@ public class P_Inventory : MonoBehaviour
     private bool m_inventoryOpen = false;
 
     // Grid layout UI component for laying out cell slot objects
-    private GridLayoutGroup m_slotContainerGridLayout;
+    private GridLayoutGroup m_inventoryGridLayout;
+
+    private GridLayoutGroup m_containerGridLayout;
 
     // Check if screen width changed
     private float m_lastWidth;
@@ -42,13 +48,16 @@ public class P_Inventory : MonoBehaviour
     void Start()
     {
         // Get reference to the grid layout
-        m_slotContainerGridLayout = m_slotContainer.GetComponent<GridLayoutGroup>();
+        m_inventoryGridLayout = m_inventorySlotSubPanel.GetComponent<GridLayoutGroup>();
+
+        m_containerGridLayout = m_containerSlotSubPanel.GetComponent<GridLayoutGroup>();
 
         // Set the cell sizes initially
-        INV_Library.AdjustGridCells(m_inventoryPanel, m_slotContainerGridLayout, m_horSlotsToDisplay);
+        INV_Library.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
+        INV_Library.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
 
         // Layout the slots to begin with, initiallizes and populates array also
-        m_slotArray = INV_Library.LayoutSlots(m_curBagSize, m_slotObject, m_slotContainer);
+        m_slotArray = INV_Library.LayoutSlots(m_curBagSize, m_slotObject, m_inventorySlotSubPanel);
     }
 
     // Update is called once per frame
@@ -63,17 +72,27 @@ public class P_Inventory : MonoBehaviour
         // "OPENING A CONTAINER"
         if (Input.GetButtonDown("X_Button"))
         {
-            ToggleInventory(1);
+            //OpenContainer();
         }
 
 
         // Accomodate resolution change in inventory
         if (m_lastWidth != Screen.width)
         {
-            INV_Library.AdjustGridCells(m_inventoryPanel, m_slotContainerGridLayout, m_horSlotsToDisplay);
+            // Set the cell sizes on rescale
+            INV_Library.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
+            INV_Library.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
         }
 
         m_lastWidth = Screen.width;
+    }
+
+    // Open a container with the inventory (interface function
+    public void OpenContainer(WORLD_Container containerReference)
+    {
+        // Layout the slots to begin with, initiallizes and populates array also
+        m_slotArray = INV_Library.LayoutSlots(containerReference.CONTAINER_SIZE, m_slotObject, m_containerSlotSubPanel);
+        ToggleInventory(1);
     }
 
     // Perform basic toggle
