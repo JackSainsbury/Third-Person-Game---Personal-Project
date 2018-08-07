@@ -14,7 +14,7 @@ public class P_Attack : C_Attack {
 	// Update is called once per frame
 	void Update () {
 		// Do a sword attack
-		if (Input.GetButtonDown("X_Button")) {
+		if (Input.GetAxis("InputTriggers") < -.05f) {
 			TryAttack ();
 		}
 	}
