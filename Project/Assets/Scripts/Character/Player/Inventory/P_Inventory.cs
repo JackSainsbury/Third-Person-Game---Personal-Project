@@ -41,58 +41,171 @@ public class P_Inventory : MonoBehaviour
 
     private GridLayoutGroup m_containerGridLayout;
 
+    // List of containers which are in range of the player
+    public List<WORLD_Container> m_containersInRange;
+
     // Check if screen width changed
     private float m_lastWidth;
+
+    // Scroll target at 0,0 initially
+    private Vector2 m_invScrollTarget = Vector2.zero;
+
+    // Used to delay between auto scrolling
+    private bool m_canScrollInv = true;
+    // The delaying coroutine, cached here so that we can interrupt if left stick is released
+    private IEnumerator m_scrollCoroutine;
+
+    // If there are 1 or more containers in my inRange list, keep checking to see which is closest and cycle the visuals
+    private IEnumerator m_closestContainterCheckCoroutine;
 
     // Use this for initialization
     void Start()
     {
+        // Create a new list for the containers which enter our range
+        m_containersInRange = new List<WORLD_Container>();
+
         // Get reference to the grid layout
         m_inventoryGridLayout = m_inventorySlotSubPanel.GetComponent<GridLayoutGroup>();
 
         m_containerGridLayout = m_containerSlotSubPanel.GetComponent<GridLayoutGroup>();
 
         // Set the cell sizes initially
-        INV_Library.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
-        INV_Library.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
+        LIB_Inventory.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
+        LIB_Inventory.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
 
         // Layout the slots to begin with, initiallizes and populates array also
-        m_slotArray = INV_Library.LayoutSlots(m_curBagSize, m_slotObject, m_inventorySlotSubPanel);
+        m_slotArray = LIB_Inventory.LayoutSlots(m_curBagSize, m_slotObject, m_inventorySlotSubPanel);
     }
 
     // Update is called once per frame
     void Update()
     {
-        // "OPENING STANDARD INVENTORY"
-        if (Input.GetButtonDown("Y_Button"))
-        {
-            ToggleInventory();
-        }
-
-        // "OPENING A CONTAINER"
-        if (Input.GetButtonDown("X_Button"))
-        {
-            //OpenContainer();
-        }
-
-
         // Accomodate resolution change in inventory
         if (m_lastWidth != Screen.width)
         {
             // Set the cell sizes on rescale
-            INV_Library.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
-            INV_Library.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
+            LIB_Inventory.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
+            LIB_Inventory.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
         }
 
         m_lastWidth = Screen.width;
+
+        // Do container distance and icon display cycling (every 0.3 seconds the list is checked)
+        if(m_containersInRange.Count > 0)
+        {
+            if (m_closestContainterCheckCoroutine == null)
+            {
+                m_closestContainterCheckCoroutine = containerIconCheck();
+                StartCoroutine(m_closestContainterCheckCoroutine);
+            }
+        }
+    }
+
+    // Inventory is open and left stick has been moved
+    public void ScrollInventory(Vector2 leftStick)
+    {
+        // Set the input vector to move discretely
+        leftStick = new Vector2(
+            leftStick.x > .3f ? 1 : leftStick.x < -.3f ? -1 : 0,
+            leftStick.y > .3f ? 1 : leftStick.y < -.3f ? -1 : 0
+            );
+
+        if (m_canScrollInv)
+        {
+            if (leftStick.x != 0 || leftStick.y != 0)
+            {
+                m_invScrollTarget += leftStick;
+                m_canScrollInv = false;
+
+                // Start the delay coroutine
+                m_scrollCoroutine = scrollDelay();
+                StartCoroutine(m_scrollCoroutine);
+            }
+        }
+        else
+        {
+            if (leftStick.x == 0 && leftStick.y == 0)
+            {
+                StopCoroutine(m_scrollCoroutine);
+                m_canScrollInv = true;
+            }
+        }
+    }
+
+    // Delaying coroutine for automatic scrolling of the cursor, when the user holds down the left stick in the inventory
+    IEnumerator scrollDelay()
+    {
+        yield return new WaitForSeconds(.4f);
+        m_canScrollInv = true;
     }
 
     // Open a container with the inventory (interface function
-    public void OpenContainer(WORLD_Container containerReference)
+    public void OpenContainer()
     {
-        // Layout the slots to begin with, initiallizes and populates array also
-        m_slotArray = INV_Library.LayoutSlots(containerReference.CONTAINER_SIZE, m_slotObject, m_containerSlotSubPanel);
-        ToggleInventory(1);
+        WORLD_Container closestContainerInRange = SortContainers();
+
+        if (closestContainerInRange != null)
+        {
+            // Layout the slots to begin with, initiallizes and populates array also
+            m_slotArray = LIB_Inventory.LayoutSlots(closestContainerInRange.CONTAINER_SIZE, m_slotObject, m_containerSlotSubPanel);
+            ToggleInventory(1);
+        }
+    }
+
+    // Gets the closest container from the list of containers in range, if none exist, returns null
+    public WORLD_Container SortContainers()
+    {
+        int numberOfContainersInRange = m_containersInRange.Count;
+
+        if (numberOfContainersInRange > 0)
+        {
+            // Sort the containers by distance
+            WORLD_Container closestContainerInRange = m_containersInRange[0];
+            
+            float closestDistance = Vector3.Distance(transform.position, closestContainerInRange.transform.position);
+
+            // Find closest
+            for (int i = 0; i < numberOfContainersInRange; ++i)
+            {
+                float candidateDistance = Vector3.Distance(transform.position, m_containersInRange[i].transform.position);
+
+                m_containersInRange[i].m_openIcon.SetActive(true);
+
+                if (candidateDistance < closestDistance)
+                {
+                    closestDistance = candidateDistance;
+
+                    // Disable old
+                    closestContainerInRange.m_openIcon.SetActive(false);
+                    closestContainerInRange = m_containersInRange[i];
+                }
+                else
+                {
+                    // If I was comparing myself against the shorted distance, don't disable
+                    if (closestContainerInRange != m_containersInRange[i])
+                    {
+                        m_containersInRange[i].m_openIcon.SetActive(false);
+                    }
+                }
+            }
+
+            return closestContainerInRange;
+        }
+
+        return null;
+    }
+
+    IEnumerator containerIconCheck()
+    {
+        while (m_containersInRange.Count > 0)
+        {
+            yield return new WaitForSeconds(0.1f);
+            SortContainers();
+
+            yield return null;
+        }
+
+        m_closestContainterCheckCoroutine = null;
     }
 
     // Perform basic toggle
@@ -145,5 +258,15 @@ public class P_Inventory : MonoBehaviour
 
         // Update the game controller, static vars
         LIB_GameController.IS_INVENTORY_OPEN = m_inventoryOpen;
+    }
+
+    public void AddContainter(WORLD_Container toAddContainer)
+    {
+        m_containersInRange.Add(toAddContainer);
+    }
+
+    public void RemoveContainer(WORLD_Container toRemoveContainer)
+    {
+        m_containersInRange.Remove(toRemoveContainer);
     }
 }

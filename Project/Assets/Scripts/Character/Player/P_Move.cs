@@ -85,11 +85,6 @@ public class P_Move : MonoBehaviour {
 	private Vector3 m_currentGroundNormal;
 	private float m_currentYStepTaretDist;
 
-	private Vector3 OLD_POS_TEST = Vector3.zero;
-	private Vector3 NEW_POS_TEST = Vector3.zero;
-
-
-
 	// Use this for initialization
 	void Start () {
 		GetComponent<CapsuleCollider> ().radius = m_playerColliderRadius;
@@ -99,48 +94,45 @@ public class P_Move : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-		// Left joystick
-		float verL = Input.GetAxis ("VerticalL");
-		float horL = Input.GetAxis ("HorizontalL");
-
-		// Right joystick
-		float verR = Input.GetAxis ("VerticalR");
-		float horR = Input.GetAxis ("HorizontalR");
-
-		// Input axis as unit vector
-		Vector3 movementRawL = new Vector3 (horL, 0, verL);
-		// Input right
-		Vector3 movementRawR = new Vector3 (horR, 0, verR);
-
-		MovementLibrary.PlayerDropGravity (this);
-
-		// General Dash
-		if (Input.GetButtonDown("B_Button")) {
-			Dash (new Vector2 (0, 1), m_dashTime, .1f, 2.5f, CharacterSpace.Player, false);
-		}
-
-		if (m_canWalk) {
-			if (verL != 0 || horL != 0) {
-				// Try and move the player
-				MovementLibrary.MovePlayer (this, movementRawL, m_moveSpeed);
-			}
-		}
-
-		if (m_cameraAnchor.transform.position != transform.position) {
-			// Move camera to player position
-			PositionCamera ();
-		}
-
-		if(Input.GetButtonDown("A_Button") && IsGrounded){
-			Jump (new Vector3(transform.forward.x * m_jumpForwardForce, m_jumpVeritcalForce, transform.forward.z * m_jumpForwardForce));
-		}
-
-		// Set player and camera rot
-		OrientPlayerAndCamera (movementRawL, movementRawR);
-
-		Debug.DrawLine (OLD_POS_TEST, NEW_POS_TEST);
+      
 	}
-		
+	
+    public void DoMove(float horL, float verL, float horR, float verR)
+    {
+        // Input axis as unit vector
+        Vector3 movementRawL = new Vector3(horL, 0, verL);
+        // Input right
+        Vector3 movementRawR = new Vector3(horR, 0, verR);
+
+        MovementLibrary.PlayerDropGravity(this);
+
+        if (m_canWalk)
+        {
+            if (verL != 0 || horL != 0)
+            {
+                // Try and move the player
+                MovementLibrary.MovePlayer(this, movementRawL, m_moveSpeed);
+            }
+        }
+
+        if (m_cameraAnchor.transform.position != transform.position)
+        {
+            // Move camera to player position
+            PositionCamera();
+        }
+
+        // Set player and camera rot
+        OrientPlayerAndCamera(movementRawL, movementRawR);
+    }
+
+    // From input script
+    public void Jump()
+    {
+        if (IsGrounded)
+        {
+            Jump(new Vector3(transform.forward.x * m_jumpForwardForce, m_jumpVeritcalForce, transform.forward.z * m_jumpForwardForce));
+        }
+    }
 
 	// Methods
 	public void Jump(Vector3 initialFallVelocity){
@@ -160,8 +152,14 @@ public class P_Move : MonoBehaviour {
 
 	//-------------------------------------
 
-	// External/Internal dashing function, in a normalized (x,z) direction
-	public void Dash(Vector2 movementRawR, float timeToDash, float resetTime, float dashLength, CharacterSpace space = CharacterSpace.Camera, bool overrideCurDash = false){
+    // From input script
+    public void Dash()
+    {
+        Dash(new Vector2(0, 1), m_dashTime, .1f, 2.5f, CharacterSpace.Player, false);
+    }
+
+    // External/Internal dashing function, in a normalized (x,z) direction
+    public void Dash(Vector2 movementRawR, float timeToDash, float resetTime, float dashLength, CharacterSpace space = CharacterSpace.Camera, bool overrideCurDash = false){
 		// Can I dash or am I forcing a new dash
 		if(m_canDash || overrideCurDash) {
 			// Hard reset the current dash

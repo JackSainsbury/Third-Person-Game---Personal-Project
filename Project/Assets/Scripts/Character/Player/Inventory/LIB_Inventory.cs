@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class INV_Library : MonoBehaviour {
+public class LIB_Inventory : MonoBehaviour {
 
    public static void AdjustGridCells(GameObject m_panel, GridLayoutGroup m_slotGridLayout, int m_horSlotsToDisplay)
     {

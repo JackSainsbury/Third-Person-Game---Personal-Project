@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public class WORLD_Container : MonoBehaviour {
     // The world icon for activating the chest
-    public GameObject m_XIcon;
+    public GameObject m_openIcon;
 
     // Size of the container
     [SerializeField]
@@ -23,16 +23,27 @@ public class WORLD_Container : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
-	void Update () {
-		
+	void LateUpdate () {
+        if (m_openIcon.activeSelf)
+        {
+            m_openIcon.transform.forward = -Camera.main.transform.forward;
+        }
 	}
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            GameObject.FindGameObjectWithTag("Player").GetComponent<P_Inventory>().OpenContainer(this);
-            //m_XIcon.SetActive(true);
+            other.GetComponent<P_Inventory>().AddContainter(this);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            other.GetComponent<P_Inventory>().RemoveContainer(this);
+            m_openIcon.SetActive(false);
         }
     }
 
