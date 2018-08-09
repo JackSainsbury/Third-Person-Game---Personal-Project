@@ -28,7 +28,9 @@ public class P_Inventory : MonoBehaviour
 
 
     // Array to hold what items are currently held
-    private Slot[] m_slotArray;
+    private Slot[] m_slotArrayInventory;
+    // Array to hold what items are currently held
+    private Slot[] m_slotArrayContainer;
 
     // Size of the currently equiped bag
     private int m_curBagSize = 25;
@@ -61,15 +63,16 @@ public class P_Inventory : MonoBehaviour
     // If there are 1 or more containers in my inRange list, keep checking to see which is closest and cycle the visuals
     private IEnumerator m_closestContainterCheckCoroutine;
 
+
     // Use this for initialization
     void Start()
     {
         // Create a new list for the containers which enter our range
         m_containersInRange = new List<WORLD_Container>();
 
+
         // Get reference to the grid layout
         m_inventoryGridLayout = m_inventorySlotSubPanel.GetComponent<GridLayoutGroup>();
-
         m_containerGridLayout = m_containerSlotSubPanel.GetComponent<GridLayoutGroup>();
 
         // Set the cell sizes initially
@@ -77,10 +80,15 @@ public class P_Inventory : MonoBehaviour
         LIB_Inventory.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
 
         // Layout the slots to begin with, initiallizes and populates array also
-        m_slotArray = LIB_Inventory.LayoutSlots(m_curBagSize, m_slotObject, m_inventorySlotSubPanel);
+        m_slotArrayInventory = LIB_Inventory.LayoutSlots(m_curBagSize, m_slotObject, m_inventorySlotSubPanel);
 
-        m_slotHighlighter.transform.position = m_slotArray[0].SLOTOBJ.transform.position;
-        m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+        if (m_slotArrayInventory.Length > 0)
+        {
+            LIB_Inventory.ForceGridLayoutGroupRebuild(m_inventorySlotSubPanel.GetComponent<RectTransform>());
+
+            m_slotHighlighter.transform.position = m_slotArrayInventory[0].SLOTOBJ.transform.position;
+            m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+        }
     }
 
     // Update is called once per frame
@@ -93,6 +101,14 @@ public class P_Inventory : MonoBehaviour
             // Set the cell sizes on rescale
             LIB_Inventory.AdjustGridCells(m_inventoryPanel, m_inventoryGridLayout, m_horSlotsToDisplay);
             LIB_Inventory.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
+
+            // Rebuild the inventory grid on adjust
+
+            LIB_Inventory.ForceGridLayoutGroupRebuild(m_inventorySlotSubPanel.GetComponent<RectTransform>());
+
+            // Adjust the highlighter slot position on resize
+            m_slotHighlighter.transform.position = m_slotArrayInventory[0].SLOTOBJ.transform.position;
+            m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
         }
 
         m_lastWidth = Screen.width;
@@ -135,12 +151,11 @@ public class P_Inventory : MonoBehaviour
 
                 int nextTarget = (int)candidateScrollTarget.y * m_horSlotsToDisplay + (int)candidateScrollTarget.x;
 
-                if (nextTarget >= 0 && nextTarget < m_slotArray.Length)
+                if (nextTarget >= 0 && nextTarget < m_slotArrayInventory.Length)
                 {
                     m_invScrollTarget = candidateScrollTarget;
 
-                    m_slotHighlighter.transform.position = m_slotArray[nextTarget].SLOTOBJ.transform.position;
-                    m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+                    m_slotHighlighter.transform.position = m_slotArrayInventory[nextTarget].SLOTOBJ.transform.position;
 
                     m_canScrollInv = false;
 
@@ -175,7 +190,14 @@ public class P_Inventory : MonoBehaviour
         if (closestContainerInRange != null)
         {
             // Layout the slots to begin with, initiallizes and populates array also
-            m_slotArray = LIB_Inventory.LayoutSlots(closestContainerInRange.CONTAINER_SIZE, m_slotObject, m_containerSlotSubPanel);
+            m_slotArrayContainer = LIB_Inventory.LayoutSlots(closestContainerInRange.CONTAINER_SIZE, m_slotObject, m_containerSlotSubPanel);
+
+            if (m_slotArrayContainer.Length > 0)
+            {
+                m_slotHighlighter.transform.position = m_slotArrayContainer[0].SLOTOBJ.transform.position;
+                m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+            }
+
             ToggleInventory(1);
         }
     }
@@ -255,7 +277,9 @@ public class P_Inventory : MonoBehaviour
         // Toggle all inventory
         m_inventoryPanel.SetActive(m_inventoryOpen);
         m_inventoryBackground.SetActive(m_inventoryOpen);
-   
+
+        m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+
         // Enable the slot highlighter
         m_slotHighlighter.SetActive(m_inventoryOpen);
 

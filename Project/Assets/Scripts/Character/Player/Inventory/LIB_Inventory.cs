@@ -45,6 +45,24 @@ public class LIB_Inventory : MonoBehaviour {
     }
 
 
+    public static void ForceGridLayoutGroupRebuild(RectTransform rootTransform)
+    {
+        if (!LIB_GameController.IS_INVENTORY_OPEN)
+        {
+            // Force the layout panel to update when creating the slots - allows me to match the highlight object to the first in the sequence
+            rootTransform.parent.gameObject.SetActive(true);
+            GridLayoutGroup groupLayout = rootTransform.GetComponent<GridLayoutGroup>();
+
+            groupLayout.CalculateLayoutInputHorizontal();
+            groupLayout.CalculateLayoutInputVertical();
+            groupLayout.SetLayoutHorizontal();
+            groupLayout.SetLayoutVertical();
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rootTransform);
+            rootTransform.parent.gameObject.SetActive(false);
+        }
+    }
+
     public static float CELL_DIMENSION
     {
         get
