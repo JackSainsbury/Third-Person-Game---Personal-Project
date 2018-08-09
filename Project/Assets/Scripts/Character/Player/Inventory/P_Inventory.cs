@@ -22,6 +22,9 @@ public class P_Inventory : MonoBehaviour
     // For state 0, load this left hand panel
     public GameObject m_equipmentPanel;
 
+    // Slot highlight prefab, signifies the currently selected icon
+    public GameObject m_slotHighlighter;
+
 
 
     // Array to hold what items are currently held
@@ -75,11 +78,15 @@ public class P_Inventory : MonoBehaviour
 
         // Layout the slots to begin with, initiallizes and populates array also
         m_slotArray = LIB_Inventory.LayoutSlots(m_curBagSize, m_slotObject, m_inventorySlotSubPanel);
+
+        m_slotHighlighter.transform.position = m_slotArray[0].SLOTOBJ.transform.position;
+        m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
     }
 
     // Update is called once per frame
     void Update()
     {
+
         // Accomodate resolution change in inventory
         if (m_lastWidth != Screen.width)
         {
@@ -104,22 +111,43 @@ public class P_Inventory : MonoBehaviour
     // Inventory is open and left stick has been moved
     public void ScrollInventory(Vector2 leftStick)
     {
+        // Only 4 directional movement
+        if (Mathf.Abs(leftStick.x) > Mathf.Abs(leftStick.y))
+        {
+            leftStick.y = 0;
+        }
+        else
+        {
+            leftStick.x = 0;
+        }
+
         // Set the input vector to move discretely
         leftStick = new Vector2(
-            leftStick.x > .3f ? 1 : leftStick.x < -.3f ? -1 : 0,
-            leftStick.y > .3f ? 1 : leftStick.y < -.3f ? -1 : 0
+            leftStick.x > 0.15f ? 1 : leftStick.x < -0.15f ? -1 : 0,
+            leftStick.y > 0.15f ? -1 : leftStick.y < -0.15f ? 1 : 0
             );
 
         if (m_canScrollInv)
         {
             if (leftStick.x != 0 || leftStick.y != 0)
             {
-                m_invScrollTarget += leftStick;
-                m_canScrollInv = false;
+                Vector2 candidateScrollTarget = m_invScrollTarget + leftStick;
 
-                // Start the delay coroutine
-                m_scrollCoroutine = scrollDelay();
-                StartCoroutine(m_scrollCoroutine);
+                int nextTarget = (int)candidateScrollTarget.y * m_horSlotsToDisplay + (int)candidateScrollTarget.x;
+
+                if (nextTarget >= 0 && nextTarget < m_slotArray.Length)
+                {
+                    m_invScrollTarget = candidateScrollTarget;
+
+                    m_slotHighlighter.transform.position = m_slotArray[nextTarget].SLOTOBJ.transform.position;
+                    m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+
+                    m_canScrollInv = false;
+
+                    // Start the delay coroutine
+                    m_scrollCoroutine = scrollDelay();
+                    StartCoroutine(m_scrollCoroutine);
+                }
             }
         }
         else
@@ -227,6 +255,9 @@ public class P_Inventory : MonoBehaviour
         // Toggle all inventory
         m_inventoryPanel.SetActive(m_inventoryOpen);
         m_inventoryBackground.SetActive(m_inventoryOpen);
+   
+        // Enable the slot highlighter
+        m_slotHighlighter.SetActive(m_inventoryOpen);
 
         if (m_inventoryOpen)
         {
