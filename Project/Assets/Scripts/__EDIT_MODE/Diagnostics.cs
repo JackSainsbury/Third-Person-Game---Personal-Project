@@ -9,6 +9,6 @@ public class Diagnostics : MonoBehaviour {
 
 	public static void StackTraceFunction(){
 		stackTrace = new StackTrace ();
-		print ("stackTrace !! " + stackTrace.GetFrame (1).GetMethod ().Name);
+        UnityEngine.Debug.Log ("stackTrace !! " + stackTrace.GetFrame (1).GetMethod ().Name);
 	}
 }

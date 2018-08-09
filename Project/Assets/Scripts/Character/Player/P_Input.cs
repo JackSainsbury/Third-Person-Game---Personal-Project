@@ -15,12 +15,13 @@ public class P_Input : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
+        
         // "OPENING STANDARD INVENTORY"
         if (Input.GetButtonDown("B_Button"))
         {
             m_inventoryScript.ToggleInventory();
         }
-
+        
         // "OPENING A CONTAINER"
         if (Input.GetButtonDown("A_Button"))
         {

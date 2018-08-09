@@ -29,7 +29,6 @@ public class LIB_Inventory : MonoBehaviour {
 
         Slot[] m_slotArray = new Slot[curBagSize];
 
-        // Do full rows
         for (int i = 0; i < curBagSize; ++i)
         {
             // Parent to the container to display on UI Canvas

@@ -47,7 +47,7 @@ public class P_Inventory : MonoBehaviour
     private GridLayoutGroup m_containerGridLayout;
 
     // List of containers which are in range of the player
-    public List<WORLD_Container> m_containersInRange;
+    private List<WORLD_Container> m_containersInRange;
 
     // Check if screen width changed
     private float m_lastWidth;
@@ -63,6 +63,8 @@ public class P_Inventory : MonoBehaviour
     // If there are 1 or more containers in my inRange list, keep checking to see which is closest and cycle the visuals
     private IEnumerator m_closestContainterCheckCoroutine;
 
+    // The left hand panel, what pallette am I displaying (character info / container)
+    private int m_palletteState = 0;
 
     // Use this for initialization
     void Start()
@@ -95,6 +97,16 @@ public class P_Inventory : MonoBehaviour
     void Update()
     {
 
+        // Do container distance and icon display cycling (every 0.3 seconds the list is checked)
+        if (m_containersInRange.Count > 0)
+        {
+            if (m_closestContainterCheckCoroutine == null)
+            {
+                m_closestContainterCheckCoroutine = containerIconCheck();
+                StartCoroutine(m_closestContainterCheckCoroutine);
+            }
+        }
+
         // Accomodate resolution change in inventory
         if (m_lastWidth != Screen.width)
         {
@@ -103,7 +115,6 @@ public class P_Inventory : MonoBehaviour
             LIB_Inventory.AdjustGridCells(m_containerPanel, m_containerGridLayout, m_horSlotsToDisplay);
 
             // Rebuild the inventory grid on adjust
-
             LIB_Inventory.ForceGridLayoutGroupRebuild(m_inventorySlotSubPanel.GetComponent<RectTransform>());
 
             // Adjust the highlighter slot position on resize
@@ -112,16 +123,6 @@ public class P_Inventory : MonoBehaviour
         }
 
         m_lastWidth = Screen.width;
-
-        // Do container distance and icon display cycling (every 0.3 seconds the list is checked)
-        if(m_containersInRange.Count > 0)
-        {
-            if (m_closestContainterCheckCoroutine == null)
-            {
-                m_closestContainterCheckCoroutine = containerIconCheck();
-                StartCoroutine(m_closestContainterCheckCoroutine);
-            }
-        }
     }
 
     // Inventory is open and left stick has been moved
@@ -129,6 +130,7 @@ public class P_Inventory : MonoBehaviour
     {
         // Only 4 directional movement
         if (Mathf.Abs(leftStick.x) > Mathf.Abs(leftStick.y))
+
         {
             leftStick.y = 0;
         }
@@ -143,14 +145,67 @@ public class P_Inventory : MonoBehaviour
             leftStick.y > 0.15f ? -1 : leftStick.y < -0.15f ? 1 : 0
             );
 
-        if (m_canScrollInv)
+
+        if (leftStick.x != 0 || leftStick.y != 0)
         {
-            if (leftStick.x != 0 || leftStick.y != 0)
+            if (m_canScrollInv)
             {
                 Vector2 candidateScrollTarget = m_invScrollTarget + leftStick;
-
                 int nextTarget = (int)candidateScrollTarget.y * m_horSlotsToDisplay + (int)candidateScrollTarget.x;
+              
+                // Vertical scrolling
+                if (leftStick.y != 0)
+                {
+                    if (leftStick.y == 1)
+                    {
+                        // Moving up has taken me out of range
+                        if (nextTarget >= m_slotArrayInventory.Length)
+                        {
+                            candidateScrollTarget.y = 0;
+                        }
+                    }
+                    else
+                    {
+                        if(nextTarget < 0)
+                        {
+                            // Get the length of the last row
+                            int lastRowLength = m_curBagSize % m_horSlotsToDisplay;
+                            lastRowLength = lastRowLength == 0 ? m_horSlotsToDisplay : lastRowLength;
 
+                            int lastFullRow = m_curBagSize / m_horSlotsToDisplay;
+
+                            if(candidateScrollTarget.x >= lastRowLength)
+                            {
+                                candidateScrollTarget.y = lastFullRow - 1;
+                            }
+                            else
+                            {
+                                candidateScrollTarget.y = lastFullRow;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if(leftStick.x == 1)
+                    {
+                        if(candidateScrollTarget.x >= m_horSlotsToDisplay)
+                        {
+                            candidateScrollTarget.x = 0;
+                        }
+                    }
+                    else
+                    {
+                        if(candidateScrollTarget.x < 0)
+                        {
+                            candidateScrollTarget.x = m_horSlotsToDisplay - 1;
+                        }
+                    }
+                }
+                
+
+                nextTarget = (int)candidateScrollTarget.y * m_horSlotsToDisplay + (int)candidateScrollTarget.x;
+                
                 if (nextTarget >= 0 && nextTarget < m_slotArrayInventory.Length)
                 {
                     m_invScrollTarget = candidateScrollTarget;
@@ -167,7 +222,7 @@ public class P_Inventory : MonoBehaviour
         }
         else
         {
-            if (leftStick.x == 0 && leftStick.y == 0)
+            if (m_scrollCoroutine != null)
             {
                 StopCoroutine(m_scrollCoroutine);
                 m_canScrollInv = true;
@@ -178,10 +233,11 @@ public class P_Inventory : MonoBehaviour
     // Delaying coroutine for automatic scrolling of the cursor, when the user holds down the left stick in the inventory
     IEnumerator scrollDelay()
     {
-        yield return new WaitForSeconds(.4f);
+        yield return new WaitForSecondsRealtime(.4f);
+
         m_canScrollInv = true;
     }
-
+    
     // Open a container with the inventory (interface function
     public void OpenContainer()
     {
@@ -285,6 +341,11 @@ public class P_Inventory : MonoBehaviour
 
         if (m_inventoryOpen)
         {
+            // Pause Game
+            Time.timeScale = 0;
+
+            m_palletteState = palletteState;
+
             // Enable and disable all option windows accordingly
             switch (palletteState)
             {
@@ -306,6 +367,9 @@ public class P_Inventory : MonoBehaviour
         }
         else
         {
+            // Resume Game
+            Time.timeScale = 1;
+
             // Disable all option windows
             m_equipmentPanel.SetActive(false);
             m_containerPanel.SetActive(false);
