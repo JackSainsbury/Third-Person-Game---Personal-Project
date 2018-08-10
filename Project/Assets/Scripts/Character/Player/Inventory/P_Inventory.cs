@@ -33,7 +33,7 @@ public class P_Inventory : MonoBehaviour
     private Slot[] m_slotArrayContainer;
 
     // Size of the currently equiped bag
-    private int m_curBagSize = 25;
+    private int m_curBagSize = 28;
 
     // Amount of items to display in a horizontal line before the line wraps
     private int m_horSlotsToDisplay = 6;
@@ -63,8 +63,15 @@ public class P_Inventory : MonoBehaviour
     // If there are 1 or more containers in my inRange list, keep checking to see which is closest and cycle the visuals
     private IEnumerator m_closestContainterCheckCoroutine;
 
+
     // The left hand panel, what pallette am I displaying (character info / container)
     private int m_palletteState = 0;
+
+    // (if open) the current open container, else null
+    private WORLD_Container m_openContainer;
+
+    // If the container is open, am I currently on my inventory menu or the container menu
+    private bool m_invOrContainer = false;
 
     // Use this for initialization
     void Start()
@@ -97,7 +104,7 @@ public class P_Inventory : MonoBehaviour
     void Update()
     {
 
-        // Do container distance and icon display cycling (every 0.3 seconds the list is checked)
+        // Do container distance and icon display cycling (every 0.1 seconds the list is checked)
         if (m_containersInRange.Count > 0)
         {
             if (m_closestContainterCheckCoroutine == null)
@@ -150,16 +157,38 @@ public class P_Inventory : MonoBehaviour
         {
             if (m_canScrollInv)
             {
+                // The current bag size
+                int activeBagSize = m_curBagSize;
+                Slot[] activeArray = m_slotArrayInventory;
+
+                if (m_palletteState == 1)
+                {
+                    if (m_openContainer != null)
+                    {
+                        if (!m_invOrContainer)
+                        {
+                            activeBagSize = m_openContainer.CONTAINER_SIZE;
+                            activeArray = m_slotArrayContainer;
+                        }
+                    }
+                }
+
                 Vector2 candidateScrollTarget = m_invScrollTarget + leftStick;
                 int nextTarget = (int)candidateScrollTarget.y * m_horSlotsToDisplay + (int)candidateScrollTarget.x;
-              
-                // Vertical scrolling
+
+                // Get the length of the last row
+                int lastRowLength = activeBagSize % m_horSlotsToDisplay;
+                lastRowLength = lastRowLength == 0 ? m_horSlotsToDisplay : lastRowLength;
+
+                int lastFullRow = activeBagSize / m_horSlotsToDisplay;
+
+                // Scroll looping
                 if (leftStick.y != 0)
                 {
                     if (leftStick.y == 1)
                     {
                         // Moving up has taken me out of range
-                        if (nextTarget >= m_slotArrayInventory.Length)
+                        if (nextTarget >= activeArray.Length)
                         {
                             candidateScrollTarget.y = 0;
                         }
@@ -168,19 +197,20 @@ public class P_Inventory : MonoBehaviour
                     {
                         if(nextTarget < 0)
                         {
-                            // Get the length of the last row
-                            int lastRowLength = m_curBagSize % m_horSlotsToDisplay;
-                            lastRowLength = lastRowLength == 0 ? m_horSlotsToDisplay : lastRowLength;
-
-                            int lastFullRow = m_curBagSize / m_horSlotsToDisplay;
-
-                            if(candidateScrollTarget.x >= lastRowLength)
+                            if (lastRowLength != m_horSlotsToDisplay)
                             {
-                                candidateScrollTarget.y = lastFullRow - 1;
+                                if (candidateScrollTarget.x >= lastRowLength)
+                                {
+                                    candidateScrollTarget.y = lastFullRow - 1;
+                                }
+                                else
+                                {
+                                    candidateScrollTarget.y = lastFullRow;
+                                }
                             }
                             else
                             {
-                                candidateScrollTarget.y = lastFullRow;
+                                candidateScrollTarget.y = lastFullRow - 1;
                             }
                         }
                     }
@@ -189,16 +219,43 @@ public class P_Inventory : MonoBehaviour
                 {
                     if(leftStick.x == 1)
                     {
+                        // For all rows this applies
                         if(candidateScrollTarget.x >= m_horSlotsToDisplay)
                         {
                             candidateScrollTarget.x = 0;
                         }
+                        else
+                        {
+                            // Check if I'm on the final row
+                            if (candidateScrollTarget.y == lastFullRow)
+                            {
+                                // If so check if the final row is short
+                                if (lastRowLength != m_horSlotsToDisplay)
+                                {
+                                    // If so, check if I've gone off the end of the short row
+                                    if (candidateScrollTarget.x >= lastRowLength)
+                                    {
+                                        candidateScrollTarget.x = 0;
+                                    }
+                                }
+                            }
+                        }
                     }
                     else
                     {
-                        if(candidateScrollTarget.x < 0)
+                        if (candidateScrollTarget.x < 0)
                         {
                             candidateScrollTarget.x = m_horSlotsToDisplay - 1;
+
+                            // Check if I'm on the final row
+                            if (candidateScrollTarget.y == lastFullRow)
+                            {
+                                // If so check if the final row is short
+                                if (lastRowLength != m_horSlotsToDisplay)
+                                {
+                                    candidateScrollTarget.x = lastRowLength - 1;
+                                }
+                            }
                         }
                     }
                 }
@@ -206,11 +263,11 @@ public class P_Inventory : MonoBehaviour
 
                 nextTarget = (int)candidateScrollTarget.y * m_horSlotsToDisplay + (int)candidateScrollTarget.x;
                 
-                if (nextTarget >= 0 && nextTarget < m_slotArrayInventory.Length)
+                if (nextTarget >= 0 && nextTarget < activeArray.Length)
                 {
                     m_invScrollTarget = candidateScrollTarget;
 
-                    m_slotHighlighter.transform.position = m_slotArrayInventory[nextTarget].SLOTOBJ.transform.position;
+                    m_slotHighlighter.transform.position = activeArray[nextTarget].SLOTOBJ.transform.position;
 
                     m_canScrollInv = false;
 
@@ -233,14 +290,16 @@ public class P_Inventory : MonoBehaviour
     // Delaying coroutine for automatic scrolling of the cursor, when the user holds down the left stick in the inventory
     IEnumerator scrollDelay()
     {
-        yield return new WaitForSecondsRealtime(.4f);
+        yield return new WaitForSecondsRealtime(.2f);
 
         m_canScrollInv = true;
     }
     
-    // Open a container with the inventory (interface function
+    // Open a container with the inventory (interface function)
     public void OpenContainer()
     {
+        SetOnContainerMenu(false);
+
         WORLD_Container closestContainerInRange = SortContainers();
 
         if (closestContainerInRange != null)
@@ -250,11 +309,17 @@ public class P_Inventory : MonoBehaviour
 
             if (m_slotArrayContainer.Length > 0)
             {
-                m_slotHighlighter.transform.position = m_slotArrayContainer[0].SLOTOBJ.transform.position;
-                m_slotHighlighter.GetComponent<RectTransform>().sizeDelta = new Vector2(LIB_Inventory.CELL_DIMENSION * 1.1f, LIB_Inventory.CELL_DIMENSION * 1.1f);
+                m_openContainer = closestContainerInRange;
+
+                // Force the layout initially
+                LIB_Inventory.ForceGridLayoutGroupRebuild(m_containerSlotSubPanel.GetComponent<RectTransform>());
             }
 
             ToggleInventory(1);
+        }
+        else
+        {
+            m_openContainer = null;
         }
     }
 
@@ -330,6 +395,7 @@ public class P_Inventory : MonoBehaviour
     // Inventory state has "changed"
     void SetInventoryState(int palletteState)
     {
+
         // Toggle all inventory
         m_inventoryPanel.SetActive(m_inventoryOpen);
         m_inventoryBackground.SetActive(m_inventoryOpen);
@@ -355,12 +421,18 @@ public class P_Inventory : MonoBehaviour
 
                     m_containerPanel.SetActive(false);
 
+                    m_invScrollTarget = Vector2.zero;
+                    m_slotHighlighter.transform.position = m_slotArrayInventory[0].SLOTOBJ.transform.position;
+
                     break;
                 case 1:
                     // Opened inventory via a container (Left panel should display container contents panel)
                     m_equipmentPanel.SetActive(false);
 
                     m_containerPanel.SetActive(true);
+
+                    m_invScrollTarget = Vector2.zero;
+                    m_slotHighlighter.transform.position = m_slotArrayContainer[0].SLOTOBJ.transform.position;
 
                     break;
             }
@@ -369,6 +441,12 @@ public class P_Inventory : MonoBehaviour
         {
             // Resume Game
             Time.timeScale = 1;
+
+            m_invScrollTarget = Vector2.zero;
+
+            LIB_Inventory.CleanContainer(m_containerSlotSubPanel);
+
+            m_slotHighlighter.transform.position = m_slotArrayInventory[0].SLOTOBJ.transform.position;
 
             // Disable all option windows
             m_equipmentPanel.SetActive(false);
@@ -387,5 +465,55 @@ public class P_Inventory : MonoBehaviour
     public void RemoveContainer(WORLD_Container toRemoveContainer)
     {
         m_containersInRange.Remove(toRemoveContainer);
+    }
+
+    // Swap between on the container or on the inventory (when appropriate)
+    public void SetOnContainerMenu(bool value)
+    {
+        // Is a container actually open?
+        if (m_palletteState == 1)
+        {
+            m_invOrContainer = value;
+
+            m_invScrollTarget = Vector2.zero;
+
+            if (m_inventoryOpen)
+            {
+                if (m_invOrContainer)
+                {
+                    m_slotHighlighter.transform.position = m_slotArrayInventory[0].SLOTOBJ.transform.position;
+                }
+                else
+                {
+                    m_slotHighlighter.transform.position = m_slotArrayContainer[0].SLOTOBJ.transform.position;
+                }
+            }
+        }
+        else
+        {
+            m_invOrContainer = false;
+        }
+    }
+
+    // returns the currently hoverred slot
+    public Slot GetCurrentSlot()
+    {
+        int nextTarget = (int)m_invScrollTarget.y * m_horSlotsToDisplay + (int)m_invScrollTarget.x;
+
+        if (m_palletteState == 1)
+        {
+            if (m_invOrContainer)
+            {
+                return m_slotArrayInventory[nextTarget];
+            }
+            else
+            {
+                return m_slotArrayContainer[nextTarget];
+            }
+        }
+        else
+        {
+            return m_slotArrayInventory[nextTarget];
+        }
     }
 }

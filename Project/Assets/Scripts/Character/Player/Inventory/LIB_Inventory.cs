@@ -18,7 +18,7 @@ public class LIB_Inventory : MonoBehaviour {
         m_cellDimension = cellDimension;
     }
 
-    public static Slot[] LayoutSlots(int curBagSize, GameObject slotObject, GameObject slotSubPanel)
+    public static void CleanContainer(GameObject slotSubPanel)
     {
         // Clean up old cells
         int cellCount = slotSubPanel.transform.childCount;
@@ -26,7 +26,10 @@ public class LIB_Inventory : MonoBehaviour {
         {
             Destroy(slotSubPanel.transform.GetChild((cellCount - i) - 1).gameObject);
         }
+    }
 
+    public static Slot[] LayoutSlots(int curBagSize, GameObject slotObject, GameObject slotSubPanel)
+    {
         Slot[] m_slotArray = new Slot[curBagSize];
 
         for (int i = 0; i < curBagSize; ++i)
@@ -37,7 +40,7 @@ public class LIB_Inventory : MonoBehaviour {
             newSlot.transform.SetParent(slotSubPanel.transform);
 
             // Push new slot to next working index
-            m_slotArray[i] = new Slot(0, 0, newSlot);
+            m_slotArray[i] = new Slot(Random.Range(0, 100), 0, newSlot);
         }
 
         return m_slotArray;

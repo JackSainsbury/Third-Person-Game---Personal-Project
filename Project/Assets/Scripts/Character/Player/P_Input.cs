@@ -5,6 +5,7 @@ using UnityEngine;
 public class P_Input : MonoBehaviour {
 
     public P_Inventory m_inventoryScript;
+    public P_ItemSwapping m_itemSwapScript;
     public P_Move m_moveScript;
 
 	// Use this for initialization
@@ -29,6 +30,10 @@ public class P_Input : MonoBehaviour {
             {
                 m_inventoryScript.OpenContainer();
             }
+            else
+            {
+                m_itemSwapScript.SelectSlot();
+            }
         }
 
         // General Dash
@@ -38,6 +43,10 @@ public class P_Input : MonoBehaviour {
             {
                 m_moveScript.Dash();
             }
+            else
+            {
+                m_itemSwapScript.DropSlot();
+            }
         }
 
         if (Input.GetButtonDown("Y_Button"))
@@ -46,6 +55,15 @@ public class P_Input : MonoBehaviour {
             {
                 m_moveScript.Jump();
             }
+        }
+
+        if (Input.GetButtonDown("R_Bumper"))
+        {
+            m_inventoryScript.SetOnContainerMenu(true);
+        }
+        else if (Input.GetButtonDown("L_Bumper"))
+        {
+            m_inventoryScript.SetOnContainerMenu(false);
         }
 
         // Left joystick
