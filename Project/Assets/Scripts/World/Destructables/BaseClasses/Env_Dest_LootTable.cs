@@ -9,6 +9,9 @@ public class Env_Dest_LootTable : Env_Destructable {
 	[SerializeField]
 	private SO_LootTable m_lootTable;
 
+    [SerializeField]
+    private Vector3 m_spawnOffset;
+
 	// How many items from the loot table can I drop (inclusively)
 	[SerializeField]
 	private int m_minDrops = 0;
@@ -54,7 +57,7 @@ public class Env_Dest_LootTable : Env_Destructable {
 
 			// Spawn the loot
 			if(candidateDrops.Count > 0){
-				Instantiate (candidateDrops [Random.Range (0, candidateDrops.Count)], transform.position, Quaternion.identity);
+				Instantiate (candidateDrops [Random.Range (0, candidateDrops.Count)], transform.position + m_spawnOffset, Quaternion.identity);
 			}
 
 		}

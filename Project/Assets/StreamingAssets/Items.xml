@@ -2,8 +2,12 @@
 <ItemCollection>
   <Items>
     <Item id="0">
-      <Name>Sword</Name>
-      <PrefabPath>Tiles/TileDirt</PrefabPath>
+      <Name>Short Sword</Name>
+      <PrefabPath>Weapons/Sword</PrefabPath>
+    </Item>
+    <Item id="1">
+      <Name>Big Axe</Name>
+      <PrefabPath>Weapons/Axe</PrefabPath>
     </Item>
   </Items>
 </ItemCollection>
